@@ -2,6 +2,8 @@
 
 An Obsidian plugin that marks **new or recently edited notes** in the **graph view** with a highlight ring, and gives you a one-click **"mark all as read."** Useful for spotting what changed since you last looked.
 
+![Unread notes highlighted with a ring in the graph view](graph_depth_gradient.png)
+
 ## How it decides what's "unread"
 
 The plugin keeps a small per-note record of when you last *saw* each note (a `path → timestamp` map in the plugin's own `data.json`). A note counts as **unread** when:
