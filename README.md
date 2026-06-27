@@ -1,8 +1,14 @@
 # Graph Unread Highlight
 
-An Obsidian plugin that marks **new or recently edited notes** in the **graph view** with a highlight ring, and gives you a one-click **"mark all as read."** Useful for spotting what changed since you last looked.
+An Obsidian plugin that marks **new or recently edited notes** in the **graph view** with a highlight ring, and gives you a one-click **"mark all as read."** Built for **AI-assisted workflows** — when an AI assistant or automated tool writes and edits notes for you, the rings show at a glance which notes it touched since you last looked.
 
 ![Unread notes highlighted with a ring in the graph view](graph_depth_gradient.png)
+
+## Why this plugin exists
+
+When *you* pick a note and edit it yourself, you already know exactly what changed — so highlighting it adds nothing.
+
+This plugin is built for the opposite case: when an **AI assistant or other automated tool writes and edits notes for you**. In that workflow it's easy to lose track of which notes were just created or rewritten on your behalf. The graph view then becomes a quick overview of *what the tool touched* — the rings show you, at a glance, every note that was added or changed since you last looked, so you can review them and mark them as read once you've caught up.
 
 ## How it decides what's "unread"
 
