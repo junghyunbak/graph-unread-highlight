@@ -1,9 +1,9 @@
 {
   "id": "graph-unread-highlight",
   "name": "Graph Unread Highlight",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "minAppVersion": "1.4.0",
-  "description": "Highlight new or recently edited notes in the graph view, with one-click 'mark all as read'.",
+  "description": "Highlight new or recently edited notes in the graph view with a soft glow ring, with one-click 'mark all as read'.",
   "author": "Jeonghyeon Park",
   "authorUrl": "https://github.com/junghyunbak",
   "isDesktopOnly": true
