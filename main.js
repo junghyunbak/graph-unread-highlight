@@ -9,6 +9,8 @@ const DEFAULT_SETTINGS = {
   badgeColor: "#ff3399",     // vivid magenta — distinct from typical node colors
   ringGap: 4,                // extra radius beyond the node (local units)
   ringWidth: 4,              // ring thickness (local units) — bold enough to notice
+  glow: true,                // soft multi-layer glow ring instead of a crisp stroke
+  pulse: true,               // gently animate the ring (breathing)
 };
 
 module.exports = class GraphUnreadHighlight extends Plugin {
@@ -20,6 +22,7 @@ module.exports = class GraphUnreadHighlight extends Plugin {
     this.unread = new Set();
     this.layers = new Map();   // renderer -> { hanger, badges: Map(path -> Graphics) }
     this._raf = 0;
+    this._phase = 0;
 
     this.addSettingTab(new GUHSettingTab(this.app, this));
 
@@ -167,18 +170,35 @@ module.exports = class GraphUnreadHighlight extends Plugin {
 
   // ----- PIXI badges (added into renderer.hanger; auto-tracks pan/zoom) -----
 
+  ringColorInt() {
+    return parseInt(String(this.settings.badgeColor).replace("#", ""), 16) || 0xff4d4d;
+  }
+
+  strokeCircle(g, r, w, color, alpha) {
+    if (this._hasV8) {
+      g.circle(0, 0, r).stroke({ width: w, color, alpha });
+    } else {
+      g.lineStyle(w, color, alpha);
+      g.drawCircle(0, 0, r);
+    }
+  }
+
   // Hollow ring (no fill) so the node stays visible through it, sized just
-  // outside the node so even tiny nodes are not covered.
-  drawRing(g, R) {
-    const color = parseInt(String(this.settings.badgeColor).replace("#", ""), 16) || 0xff4d4d;
+  // outside the node. With glow on, faint wider rings layer outside a bright
+  // inner ring; `bright` (0..1, driven by the pulse) modulates overall opacity.
+  drawRing(g, R, bright) {
+    const color = this.ringColorInt();
     const w = this.settings.ringWidth;
     g.clear();
-    if (this._hasV8) {
-      g.circle(0, 0, R).stroke({ width: w, color, alpha: 1 });
-    } else {
-      g.lineStyle(w, color, 1);
-      g.drawCircle(0, 0, R);
+
+    if (!this.settings.glow) {
+      this.strokeCircle(g, R, w, color, bright);
+      return;
     }
+
+    this.strokeCircle(g, R + w * 2, w, color, 0.12 * bright);
+    this.strokeCircle(g, R + w, w, color, 0.28 * bright);
+    this.strokeCircle(g, R, w, color, 0.95 * bright);
   }
 
   nodeRadius(n) {
@@ -203,6 +223,10 @@ module.exports = class GraphUnreadHighlight extends Plugin {
 
   syncBadges() {
     try {
+      this._phase += 0.09;   // advances the pulse once per frame
+      const pulse = this.settings.pulse && this.unread.size > 0;
+      const bright = pulse ? 0.55 + 0.45 * (0.5 + 0.5 * Math.sin(this._phase)) : 1;
+
       for (const layer of this.layers.values()) {
         const hanger = layer.hanger;
         if (!hanger) continue;
@@ -230,15 +254,27 @@ module.exports = class GraphUnreadHighlight extends Plugin {
             g = new this._GfxClass();
             g.zIndex = 100000;
             g._r = -1;
+            g._good = 0;
             hanger.addChild(g);
             layer.badges.set(n.id, g);
             changed = true;
           }
           g.position.set(n.x, n.y);
-          const R = this.nodeRadius(n) + this.settings.ringGap;
-          if (g._r !== R) {
-            this.drawRing(g, R);
+
+          // Guard against the transient huge radius when a node circle is mid
+          // (re)creation: its scale is briefly the default, so circle.width reads
+          // the unscaled geometry. Reject a sudden >2.5x spike for that frame.
+          let R = this.nodeRadius(n) + this.settings.ringGap;
+          if (g._good > 0 && R > g._good * 2.5) {
+            R = g._good;
+          } else {
+            g._good = R;
+          }
+
+          if (pulse || g._r !== R) {
+            this.drawRing(g, R, bright);
             g._r = R;
+            changed = changed || pulse;
           }
           active.add(n.id);
         }
@@ -250,6 +286,7 @@ module.exports = class GraphUnreadHighlight extends Plugin {
             changed = true;
           }
         }
+
         if (changed && layer.renderer.changed) layer.renderer.changed();
       }
     } catch (e) {
@@ -308,6 +345,29 @@ class GUHSettingTab extends PluginSettingTab {
           this.plugin.redrawAll();
         })
       );
+
+    new Setting(containerEl)
+      .setName("Soft glow")
+      .setDesc("Draw the ring as a soft glow (layered) instead of a crisp stroke.")
+      .addToggle((t) =>
+        t.setValue(this.plugin.settings.glow).onChange(async (v) => {
+          this.plugin.settings.glow = v;
+          await this.plugin.saveData(this.plugin.settings);
+          this.plugin.redrawAll();
+        })
+      );
+
+    new Setting(containerEl)
+      .setName("Pulse")
+      .setDesc("Gently animate the ring so unread nodes breathe.")
+      .addToggle((t) =>
+        t.setValue(this.plugin.settings.pulse).onChange(async (v) => {
+          this.plugin.settings.pulse = v;
+          await this.plugin.saveData(this.plugin.settings);
+          this.plugin.redrawAll();
+        })
+      );
+
     new Setting(containerEl)
       .setName("Mark all notes as read")
       .addButton((b) => b.setButtonText("Mark all read").onClick(() => this.plugin.markAllRead()));
