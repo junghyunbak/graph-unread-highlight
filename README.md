@@ -29,14 +29,19 @@ So newly created notes and notes edited since you last opened them get a ring; o
 The ring is drawn **on the graph canvas itself** (a marker added to the renderer's node layer), so it automatically tracks each node as you pan, zoom, or as the simulation moves nodes. It is a **hollow ring sized to each node**, which means:
 
 - it never covers small nodes — the node shows through the ring;
-- it **does not change node colors**, so your theme and **Graph color groups stay intact** (and it won't fight color-based graph plugins, which can only set one color per node).
+- it leaves each node's **color** untouched, so your theme and **Graph color groups stay intact**.
+
+By default the ring is a **soft glow** that gently **pulses** to draw the eye. Both are optional.
 
 Works in both the global **Graph view** and the **Local graph**.
 
 ## Settings
 
-- **Badge color** — color of the unread ring (color palette). Default: a vivid magenta, chosen to stand out from common node colors.
+- **Badge color** — color of the unread ring. Default: a vivid magenta, chosen to stand out from common node colors.
 - **Ring gap** — how far the ring sits outside the node.
+- **Ring thickness** — width of the ring stroke.
+- **Soft glow** — draw the ring as a layered glow instead of a crisp stroke (on by default).
+- **Pulse** — gently animate the ring so unread nodes breathe (on by default).
 - **Mark all as read** — clear every ring now (also available from the command palette).
 
 ## Notes
